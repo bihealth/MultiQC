@@ -62,6 +62,7 @@ setup(
             'cutadapt = multiqc.modules.cutadapt:MultiqcModule',
             'fastq_screen = multiqc.modules.fastq_screen:MultiqcModule',
             'fastqc = multiqc.modules.fastqc:MultiqcModule',
+            'fastqc_lane = multiqc.modules.fastqc_lane:MultiqcModule',
             'featureCounts = multiqc.modules.featureCounts:MultiqcModule',
             'hicup = multiqc.modules.hicup:MultiqcModule',
             'kallisto = multiqc.modules.kallisto:MultiqcModule',
