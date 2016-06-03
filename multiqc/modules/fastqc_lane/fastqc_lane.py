@@ -113,13 +113,10 @@ class MultiqcModule(fastqc.MultiqcModule):
 
 
     def group_by_lane(self, s_names):
-        self.lanes = dict()
+        self.lanes = defaultdict(list)
         for s_name in s_names:
             m = re.match('.*_(L00[1-8])_R[12]_[0-9]{3}$', s_name)
-            if m.group(1) in self.lanes:
-                self.lanes[m.group(1)].append(s_name)
-            else:
-                self.lanes[m.group(1)] = [s_name]
+            self.lanes[m.group(1)].append(s_name)
 
 
     # dummy function, fill in future if needed
@@ -143,23 +140,11 @@ class MultiqcModule(fastqc.MultiqcModule):
                 
 
     def add_lane_statuses(self):
-        #pprint(self.fastqc_statuses)
-        self.lane_statuses = dict()
-        self.lane_statuses_colors = dict()
+        self.lane_statuses = defaultdict(lambda: defaultdict(lambda: {'pass': 0, 'warn': 0, 'fail': 0}))
+        self.lane_statuses_colors = defaultdict(lambda: defaultdict())
 
         for metric, data in self.fastqc_statuses.items():
-            self.lane_statuses[metric] = dict()
-            self.lane_statuses_colors[metric] = dict()
-            #pprint(data)
-
             for lane, s_names in self.lanes.items():
-                if not lane in self.lane_statuses[metric]:
-                    self.lane_statuses[metric][lane] = {
-                        'pass': 0,
-                        'warn': 0,
-                        'fail': 0,
-                    }
-
                 for s_name in s_names:
                     self.lane_statuses[metric][lane][data[s_name]] += 1
                         
