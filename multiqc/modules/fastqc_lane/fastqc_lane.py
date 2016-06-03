@@ -20,10 +20,11 @@ import re
 import zipfile
 import re
 
-#from pprint import pprint
+from pprint import pprint
 
 from multiqc import config, plots
 from multiqc.modules import fastqc
+
 
 # Initialise the logger
 log = logging.getLogger(__name__)
@@ -71,13 +72,6 @@ class MultiqcModule(fastqc.MultiqcModule):
             raise UserWarning
 
         log.info("Found {} reports".format(len(self.fastqc_stats)))
-
-        self.status_colours = {
-            'pass': '#5cb85c',
-            'warn': '#f0ad4e',
-            'fail': '#d9534f',
-            'default': '#999'
-        }
 
         self.group_by_lane(s_names)
         self.add_lane_statuses()
@@ -141,21 +135,30 @@ class MultiqcModule(fastqc.MultiqcModule):
 
     def add_lane_statuses(self):
         self.lane_statuses = defaultdict(lambda: defaultdict(lambda: {'pass': 0, 'warn': 0, 'fail': 0}))
-        self.lane_statuses_colors = defaultdict(lambda: defaultdict())
 
         for metric, data in self.fastqc_statuses.items():
             for lane, s_names in self.lanes.items():
                 for s_name in s_names:
                     self.lane_statuses[metric][lane][data[s_name]] += 1
-                        
-                self.lane_statuses_colors[metric][data[s_name]] = {
-                    'color': self.status_colours[data[s_name]],
-                    'name': data[s_name],
-                }
+
 
     def statuses_plot(self, metric, title):
-        colors = self.lane_statuses_colors[metric]
         data = self.lane_statuses[metric]
+
+        colors = {
+            'pass': {
+                'color': '#5cb85c',
+                'name': 'pass',
+            },
+            'warn': {
+                'color': '#f0ad4e',
+                'name': 'warn',
+            },
+            'fail': {
+                'color': '#d9534f',
+                'name': 'fail',
+            },
+        }
 
         pconfig = {
             'title': title,
