@@ -20,11 +20,8 @@ import re
 import zipfile
 import re
 
-from pprint import pprint
-
 from multiqc import config, plots
 from multiqc.modules import fastqc
-#from multiqc.utils import report
 
 # Initialise the logger
 log = logging.getLogger(__name__)
@@ -47,6 +44,7 @@ class MultiqcModule(fastqc.MultiqcModule):
         self.lane_statuses = defaultdict(lambda: defaultdict(lambda: {'pass': 0, 'warn': 0, 'fail': 0}))
         self.lane_reads = defaultdict(int)
         self.lane_stats = defaultdict(lambda: defaultdict(float))
+        self.undetermined_check = defaultdict(lambda: defaultdict(int))
         
         # Find and parse unzipped FastQC reports
         for f in self.find_log_files(config.sp['fastqc']['data']):
@@ -94,6 +92,8 @@ class MultiqcModule(fastqc.MultiqcModule):
         self.aggregate_lane_data_per_seq_quality()
         self.aggregate_lane_data_seq_dup_levels()
         self.aggregate_lane_stats()
+        self.aggregate_undetermined_check()
+        self.add_undetermined_check()
 
         self.write_data_file(self.lane_statuses, 'multiqc_fastqc_lane')
         self.sections = list()
@@ -464,3 +464,37 @@ class MultiqcModule(fastqc.MultiqcModule):
             colours[lane] = self.status_colours.get(final_status, self.status_colours['default'])
 
         return colours
+
+
+    def aggregate_undetermined_check(self):
+        for lane, s_names in self.lanes.items():
+            for s_name in s_names:
+                if s_name.startswith('Undetermined_'):
+                    undet_name = s_name
+
+            for s_name in s_names:
+                if s_name == undet_name:
+                    self.undetermined_check[s_name]['undetermined_check'] = 0
+                    continue
+
+                if self.fastqc_stats[s_name]['total_sequences'] < \
+                        self.fastqc_stats[undet_name]['total_sequences']:
+                    self.undetermined_check[s_name]['undetermined_check'] = 2
+                else:
+                    self.undetermined_check[s_name]['undetermined_check'] = 1
+
+                if self.fastqc_stats[s_name]['total_sequences'] < 1000000:
+                    self.undetermined_check[s_name]['undetermined_check'] += 2
+
+
+    def add_undetermined_check(self):
+        headers = OrderedDict()
+        headers['undetermined_check'] = {
+            'title': 'Seqs < Undet',
+            'description': 'Number of sequences lower than number of undetermined sequences of this lane: 1 = OK, 2 = seq < undet, 3 = seq < 1.000.000, 4 = 2 & 3',
+            'min': 0,
+            'max': 4,
+            'scale': 'Paired',
+        }
+
+        self.general_stats_addcols(self.undetermined_check, headers)
