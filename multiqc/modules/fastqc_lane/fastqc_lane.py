@@ -468,23 +468,26 @@ class MultiqcModule(fastqc.MultiqcModule):
 
     def aggregate_undetermined_check(self):
         for lane, s_names in self.lanes.items():
+            undet_name = None
+
             for s_name in s_names:
                 if s_name.startswith('Undetermined_'):
                     undet_name = s_name
 
             for s_name in s_names:
+                self.undetermined_check[s_name]['undetermined_check'] = 0
+
                 if s_name == undet_name:
-                    self.undetermined_check[s_name]['undetermined_check'] = 0
                     continue
 
-                if self.fastqc_stats[s_name]['total_sequences'] < \
-                        self.fastqc_stats[undet_name]['total_sequences']:
-                    self.undetermined_check[s_name]['undetermined_check'] = 2
-                else:
-                    self.undetermined_check[s_name]['undetermined_check'] = 1
+                self.undetermined_check[s_name]['undetermined_check'] = 1
 
                 if self.fastqc_stats[s_name]['total_sequences'] < 1000000:
                     self.undetermined_check[s_name]['undetermined_check'] += 2
+                    
+                if undet_name and self.fastqc_stats[s_name]['total_sequences'] < \
+                        self.fastqc_stats[undet_name]['total_sequences']:
+                    self.undetermined_check[s_name]['undetermined_check'] += 1
 
 
     def add_undetermined_check(self):
